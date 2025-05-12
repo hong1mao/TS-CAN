@@ -31,7 +31,7 @@ def test():
     # 初始化模型并加载最佳权重
     frame_depth = config['model']['frame_depth']
     model = TSCAN(frame_depth=frame_depth).to(device)
-    best_model_path = "./checkpoints/tscan_best.pth"
+    best_model_path = "run/run_1/tscan_best.pth"
     model.load_state_dict(torch.load(best_model_path))
     model.eval()
 

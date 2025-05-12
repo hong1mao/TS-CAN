@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import random
 import torch
@@ -10,6 +12,7 @@ from model.TS_CAN import TSCAN
 import yaml
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+
 
 def main():
     # 加载配置文件
@@ -84,10 +87,16 @@ def main():
     # 训练循环
     num_epochs = config['training']['num_epochs']
 
-    # 保存最佳模型的路径
-    best_model_path = "./checkpoints/tscan_best.pth"
+    # 创建 run 目录
+    run_dir = "./run"
+    if not os.path.exists(run_dir):
+        os.makedirs(run_dir)
+    # 生成训练结果编号
+    run_id = len(os.listdir(run_dir)) + 1
+    run_path = os.path.join(run_dir, f"run_{run_id}")
+    os.makedirs(run_path)
+    best_model_path = os.path.join(run_path, "tscan_best.pth")
     best_val_loss = float('inf')
-
 
     # 记录训练和验证损失
     train_losses = []
@@ -168,6 +177,7 @@ def main():
 
     print("Training finished.")
 
+    # 保存训练结果
     plt.figure(figsize=(8, 5))
     plt.plot(train_losses, label='Train Loss')
     plt.plot(val_losses, label='Validation Loss')
@@ -175,6 +185,8 @@ def main():
     plt.title("Loss Curve")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
+    plt.savefig(os.path.join(run_path, "loss_curve.png"))
+    plt.close()
 
     # 绘制学习率曲线
     plt.figure(figsize=(8, 5))
@@ -183,6 +195,8 @@ def main():
     plt.xlabel("Step")
     plt.ylabel("Learning Rate")
     plt.show()
+    plt.savefig(os.path.join(run_path, "lr_curve.png"))
+    plt.close()
 
 
 if __name__ == "__main__":
