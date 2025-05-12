@@ -1,0 +1,61 @@
+# config.yaml
+
+train:
+  data:
+    data_path: "D:\\UBFC"
+    cached_path: "D:\\UBFC\\train_cache"
+    file_list_path: "D:\\UBFC\\train_filelist.csv"
+    split_ratio:
+      - 0.0
+      - 0.8
+    chunk_length: 180
+    preprocess: true
+    larger_box_coef: 1.5
+    backend: "YOLO"
+
+val:
+  data:
+    data_path: "D:\\UBFC"
+    cached_path: "D:\\UBFC\\val_cache"
+    file_list_path: "D:\\UBFC\\val_filelist.csv"
+    split_ratio:
+      - 0.8
+      - 1.0
+    chunk_length: 180
+    preprocess: true
+    larger_box_coef: 1.5
+    backend: "YOLO"
+
+test:
+  data:
+    data_path: "D:\\UBFC"
+    cached_path: "D:\\UBFC\\test_cache"
+    file_list_path: "D:\\UBFC\\test_filelist.csv"
+    split_ratio:
+      - 0.9
+      - 1.0
+    chunk_length: 180
+    preprocess: false
+    larger_box_coef: 1.5
+    backend: "YOLO"
+
+model:
+  name: "TSCAN"
+  frame_depth: 10
+  re_size: 72
+
+training:
+  num_epochs: 30
+  optimizer:
+    type: "AdamW"
+    lr: 0.009
+  loss_function: "MSELoss"
+  batch_size: 4
+  shuffle: true
+  num_workers: 4
+
+device:
+  use_cuda: true
+
+checkpoints:
+  save_path: "./checkpoints"
