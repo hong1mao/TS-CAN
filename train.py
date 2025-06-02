@@ -36,8 +36,11 @@ def main():
                                     chunk_length=config['train']['data']['chunk_length'],
                                     preprocess=config['train']['data']['preprocess'],
                                     re_size=config['model']['re_size'],
+                                    crop_face=config['train']['data']['crop_face'],
                                     larger_box_coef=config['train']['data']['larger_box_coef'],
-                                    backend=config['train']['data']['backend'])
+                                    backend=config['train']['data']['backend'],
+                                    use_face_detection=config['train']['data']['use_face_detection'],
+                                    label_type=config['train']['data']['label_type'])
 
     val_dataset = UBFCrPPGDataset(data_path=config['val']['data']['data_path'],
                                   cached_path=config['val']['data']['cached_path'],
@@ -46,8 +49,11 @@ def main():
                                   chunk_length=config['val']['data']['chunk_length'],
                                   preprocess=config['val']['data']['preprocess'],
                                   re_size=config['model']['re_size'],
+                                  crop_face=config['train']['data']['crop_face'],
                                   larger_box_coef=config['val']['data']['larger_box_coef'],
-                                  backend=config['val']['data']['backend'])
+                                  backend=config['val']['data']['backend'],
+                                  use_face_detection=config['val']['data']['use_face_detection'],
+                                  label_type=config['val']['data']['label_type'])
 
     train_loader = DataLoader(train_dataset,
                               batch_size=config['training']['batch_size'],
@@ -194,7 +200,6 @@ def main():
     plt.title("Learning Rate Schedule")
     plt.xlabel("Step")
     plt.ylabel("Learning Rate")
-    plt.show()
     plt.savefig(os.path.join(run_path, "lr_curve.png"))
     plt.close()
 

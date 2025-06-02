@@ -14,7 +14,9 @@ class UBFCrPPGDataset(Dataset):
 
     def __init__(self, data_path, cached_path, file_list_path, split_ratio=(0.0, 1.0), chunk_length=128,
                  preprocess=True, YOLOv8_model_path="D:\\文档\\python项目\\models\\best_face.pt",
-                 re_size=36, larger_box_coef=1.5, backend="HC"):
+                 re_size=36, crop_face=True,
+                 larger_box_coef=1.5, backend="HC", use_face_detection=True,
+                 label_type="DiffNormalized"):
         """
         Args:
             data_path (str): Path to raw dataset folder.
@@ -33,7 +35,9 @@ class UBFCrPPGDataset(Dataset):
         self.re_size = re_size
         self.larger_box_coef = larger_box_coef
         self.backend = backend
-
+        self.use_face_detection = use_face_detection
+        self.label_type = label_type
+        self.crop_face = crop_face
         # 加载预训练的 YOLOv8 模型
         self.YOLOv8_model_path = YOLOv8_model_path
         self.yolo_model = None  # 不立即加载
@@ -200,7 +204,8 @@ class UBFCrPPGDataset(Dataset):
             face_box_coor[3] = larger_box_coef * face_box_coor[3]
         return face_box_coor
 
-    def crop_face_resize(self, frames, backend, use_larger_box, larger_box_coef, width, height):
+    def crop_face_resize(self, frames, backend, use_larger_box, larger_box_coef, width, height,
+                         use_face_detection=True):
         """Crop face and resize frames.
 
         Args:
@@ -210,25 +215,40 @@ class UBFCrPPGDataset(Dataset):
             use_larger_box(bool): Whether enlarge the detected bouding box from face detection.
             larger_box_coef(float): the coefficient of the larger region(height and weight),
                                 the middle point of the detected region will stay still during the process of enlarging.
+            use_face_detection(bool): Whether to use face detection to crop the face region.
         Returns:
             resized_frames(list[np.array(float)]): Resized and cropped frames
         """
-        # Face Cropping
-        face_region_all = []
-        # Perform face detection by num_dynamic_det" times.
-        face_region_all.append(self.face_detection(frames[0], backend, use_larger_box, larger_box_coef))
-        face_region_all = np.asarray(face_region_all, dtype='int')
+        total_frames, _, _, channels = frames.shape
+        if self.crop_face:
+            # Face Cropping
+            face_region_all = []
+            if use_face_detection:
+                # 对每个帧进行人脸检测
+                for i in range(0, total_frames):
+                    frame = frames[i]
+                    face_region_all.append(self.face_detection(frame, backend, use_larger_box, larger_box_coef))
+            else:
+                # 只对第一个帧进行人脸检测
+                face_region_all.append(self.face_detection(frames[0], backend, use_larger_box, larger_box_coef))
+            face_region_all = np.asarray(face_region_all, dtype='int')
 
         # Frame Resizing
-        total_frames, _, _, channels = frames.shape
         resized_frames = np.zeros((total_frames, height, width, channels))
         for i in range(0, total_frames):
             frame = frames[i]
-            # use the first region obtrained from the first frame.
-            reference_index = 0
-            face_region = face_region_all[reference_index]
-            frame = frame[max(face_region[1], 0):min(face_region[1] + face_region[3], frame.shape[0]),
-                    max(face_region[0], 0):min(face_region[0] + face_region[2], frame.shape[1])]
+            if self.crop_face:
+                if use_face_detection:
+                    assert len(face_region_all) == total_frames, "Face region detection failed!"
+                    # 获得当前帧的人脸区域
+                    reference_index = i
+                else:
+                    # use the first region obtrained from the first frame.
+                    reference_index = 0
+                face_region = face_region_all[reference_index]
+                frame = frame[max(face_region[1], 0):min(face_region[1] + face_region[3], frame.shape[0]),
+                        max(face_region[0], 0):min(face_region[0] + face_region[2], frame.shape[1])]
+
             resized_frames[i] = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
         return resized_frames
 
@@ -266,7 +286,8 @@ class UBFCrPPGDataset(Dataset):
             use_larger_box=True,
             larger_box_coef=self.larger_box_coef,
             width=self.re_size,
-            height=self.re_size)
+            height=self.re_size,
+            use_face_detection=self.use_face_detection)
         # Check data transformation type
         data = list()  # Video data
         for data_type in ['DiffNormalized', 'Standardized']:
@@ -280,8 +301,14 @@ class UBFCrPPGDataset(Dataset):
             else:
                 raise ValueError("Unsupported data type!")
         data = np.concatenate(data, axis=-1)  # concatenate all channels
-        # 差分归一化标签
-        bvps = UBFCrPPGDataset.diff_normalize_label(bvps)
+        if self.label_type == "DiffNormalized":
+            # 差分归一化标签
+            bvps = UBFCrPPGDataset.diff_normalize_label(bvps)
+        elif self.label_type == "Standardized":
+            # 标准化标签
+            bvps = UBFCrPPGDataset.standardized_label(bvps)
+        else:
+            raise ValueError("Unsupported label type!")
         # chunk data
         frames_clips, bvps_clips = self.chunk(data, bvps, self.chunk_length)
         return frames_clips, bvps_clips
@@ -329,17 +356,9 @@ class UBFCrPPGDataset(Dataset):
     def _load_file_list(self):
         """Load existing file list from CSV."""
         import pandas as pd
-        new_rows = []
         df = pd.read_csv(self.file_list_path)
         inputs = df['input_files'].tolist()
         self.inputs = sorted(inputs)
-        for f in self.inputs:
-            # 提取文件名
-            filename = f.split('\\')[-1]
-            # 构造新路径
-            new_path = f"D:\\UBFC\\train_cache\\new\\{filename}"
-            new_rows.append([new_path])
-        self.inputs = [row[0] for row in new_rows]
         labels = [f.replace("_input", "_label") for f in self.inputs]
         self.labels = sorted(labels)
         print(f"Loaded {len(self.inputs)} clips from cache.")

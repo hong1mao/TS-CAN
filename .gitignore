@@ -1,0 +1,8 @@
+# 忽略测试输出文件
+run/
+frame_0.png
+# 忽略测试脚本
+demo.py
+draw_GroundTruth.py
+not_realtime.py
+realtime.py

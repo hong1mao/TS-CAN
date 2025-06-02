@@ -9,9 +9,12 @@ train:
       - 0.0
       - 0.8
     chunk_length: 180
-    preprocess: true
-    larger_box_coef: 1.5
-    backend: "YOLO"
+    preprocess: true  # Set to true if you want to preprocess images
+    crop_face: false  # Set to true if you want to crop faces
+    larger_box_coef: 1.5  # Coefficient to expand the bounding box
+    backend: "YOLO"  # Set to "YOLO" if you want to use YOLO backend for face detection
+    use_face_detection: true  # Set to true if you want to use face detection for all images
+    label_type: "Standardized"  # Set to "Standardized" if you want to use standardized labels
 
 val:
   data:
@@ -22,9 +25,12 @@ val:
       - 0.8
       - 1.0
     chunk_length: 180
-    preprocess: true
+    preprocess: false
+    crop_face: false
     larger_box_coef: 1.5
     backend: "YOLO"
+    use_face_detection: true
+    label_type: "Standardized"
 
 test:
   data:
@@ -36,8 +42,11 @@ test:
       - 1.0
     chunk_length: 180
     preprocess: false
+    crop_face: false
     larger_box_coef: 1.5
     backend: "YOLO"
+    use_face_detection: true
+    label_type: "Standardized"
 
 model:
   name: "TSCAN"
@@ -52,7 +61,7 @@ training:
   loss_function: "MSELoss"
   batch_size: 4
   shuffle: true
-  num_workers: 4
+  num_workers: 5
 
 device:
   use_cuda: true

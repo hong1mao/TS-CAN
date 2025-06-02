@@ -46,6 +46,6 @@ def plot_pixel_and_label_curves(input_npy_path, label_npy_path):
 
 if __name__ == "__main__":
     # 示例调用
-    input_npy_path = r"D:\UBFC\train_cache\subject1_input0.npy"  # 替换为实际的.npy 文件路径
-    label_npy_path = r"D:\UBFC\train_cache\subject1_label0.npy"  # 替换为实际的.npy 文件路径
+    input_npy_path = r"D:\UBFC\val_cache\subject8_input0.npy"  # 替换为实际的.npy 文件路径
+    label_npy_path = r"D:\UBFC\val_cache\subject8_label0.npy"  # 替换为实际的.npy 文件路径
     plot_pixel_and_label_curves(input_npy_path, label_npy_path)
